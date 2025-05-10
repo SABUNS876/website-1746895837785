@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Anime Watch</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  #login-container, #main-container {
+    background: #1e1e1e;
+    border-radius: 10px;
+    width: 350px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 0 15px #f44336;
+  }
+  h2 {
+    margin-top: 0;
+    text-align: center;
+    color: #f44336;
+  }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 12px;
+    margin-bottom: 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+  button {
+    background-color: #f44336;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 6px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #d32f2f;
+  }
+  #error-msg {
+    color: #ffa5a5;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  #welcome-msg {
+    font-size: 20px;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #f44336;
+  }
+  #anime-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  #anime-list li {
+    background-color: #2c2c2c;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    word-break: break-word;
+  }
+  #anime-list li span {
+    flex-grow: 1;
+  }
+  #anime-list li button {
+    margin-left: 10px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  #add-anime-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  #add-anime-form input[type="text"] {
+    flex-grow: 1;
+    margin: 0;
+  }
+  #logout-btn {
+    background-color: #555;
+    margin-top: 10px;
+  }
+  #logout-btn:hover {
+    background-color: #444;
+  }
+  #edit-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px #f44336;
+    display: none;
+    width: 300px;
+    box-sizing: border-box;
+  }
+  #edit-popup input[type="text"] {
+    width: 100%;
+  }
+  #edit-popup-buttons {
+    margin-top: 15px;
+    text-align: right;
+  }
+  #edit-popup-buttons button {
+    margin-left: 10px;
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+
+  /* Scrollbar for anime list */
+  #anime-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  #anime-list::-webkit-scrollbar-thumb {
+    background-color: #f44336;
+    border-radius: 3px;
+  }
+  #anime-list::-webkit-scrollbar-track {
+    background-color: #2c2c2c;
+  }
+</style>
+</head>
+<body>
+<div id="login-container">
+  <h2>Login to Anime Watch</h2>
+  <div id="error-msg"></div>
+  <input type="text" id="username" placeholder="Username" autocomplete="username" />
+  <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+  <button id="login-btn">Login</button>
+</div>
+
+<div id="main-container" style="display:none; flex-direction: column;">
+  <div id="welcome-msg"></div>
+  <ul id="anime-list"></ul>
+  <form id="add-anime-form" style="display:none;">
+    <input type="text" id="new-anime-name" placeholder="New anime name" required />
+    <button type="submit">Add</button>
+  </form>
+  <button id="logout-btn">Logout</button>
+</div>
+
+<div id="edit-popup">
+  <label for="edit-anime-name">Edit Anime Name:</label>
+  <input type="text" id="edit-anime-name" />
+  <div id="edit-popup-buttons">
+    <button id="cancel-edit-btn">Cancel</button>
+    <button id="save-edit-btn">Save</button>
+  </div>
+</div>
+
+<script>
+  // Credentials
+  const ADMIN_USER = 'Natsu';
+  const ADMIN_PASS = 'Natsu';
+
+  // State
+  let loggedInUser = null;
+  let animeList = [
+    'Naruto', 'One Piece', 'Bleach', 'My Hero Academia', 'Attack on Titan'
+  ];
+
+  // Elements
+  const loginContainer = document.getElementById('login-container');
+  const mainContainer = document.getElementById('main-container');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('login-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const welcomeMsg = document.getElementById('welcome-msg');
+  const animeListEl = document.getElementById('anime-list');
+  const addAnimeForm = document.getElementById('add-anime-form');
+  const newAnimeNameInput = document.getElementById('new-anime-name');
+  const logoutBtn = document.getElementById('logout-btn');
+  const editPopup = document.getElementById('edit-popup');
+  const editAnimeNameInput = document.getElementById('edit-anime-name');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
+  const saveEditBtn = document.getElementById('save-edit-btn');
+
+  let editingIndex = -1;
+
+  function renderAnimeList() {
+    animeListEl.innerHTML = '';
+    animeList.forEach((anime, index) => {
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      span.textContent = anime;
+      li.appendChild(span);
+
+      // If admin show edit button
+      if(loggedInUser === ADMIN_USER) {
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.style.backgroundColor = '#388e3c';
+        editBtn.style.color = '#fff';
+        editBtn.title = 'Edit anime name';
+        editBtn.addEventListener('click', () => {
+          openEditPopup(index);
+        });
+        li.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.backgroundColor = '#b71c1c';
+        delBtn.style.color = '#fff';
+        delBtn.title = 'Delete anime';
+        delBtn.addEventListener('click', () => {
+          if(confirm(`Delete anime "${anime}"?`)) {
+            animeList.splice(index, 1);
+            renderAnimeList();
+          }
+        });
+        li.appendChild(delBtn);
+      }
+
+      animeListEl.appendChild(li);
+    });
+  }
+
+  function openEditPopup(index) {
+    editingIndex = index;
+    editAnimeNameInput.value = animeList[index];
+    editPopup.style.display = 'block';
+    editAnimeNameInput.focus();
+  }
+
+  function closeEditPopup() {
+    editingIndex = -1;
+    editPopup.style.display = 'none';
+    editAnimeNameInput.value = '';
+  }
+
+  loginBtn.addEventListener('click', () => {
+    const user = usernameInput.value.trim();
+    const pass = passwordInput.value;
+    if(user === ADMIN_USER && pass === ADMIN_PASS) {
+      loggedInUser = user;
+      showMain();
+    } else {
+      errorMsg.textContent = 'Wrong Account';
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  });
+
+  function showMain() {
+    errorMsg.textContent = '';
+    loginContainer.style.display = 'none';
+    mainContainer.style.display = 'flex';
+    welcomeMsg.textContent = `Welcome, ${loggedInUser}!`;
+    if(loggedInUser === ADMIN_USER) {
+      addAnimeForm.style.display = 'flex';
+    } else {
+      addAnimeForm.style.display = 'none';
+    }
+    renderAnimeList();
+  }
+
+  addAnimeForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const newAnime = newAnimeNameInput.value.trim();
+    if(newAnime) {
+      animeList.push(newAnime);
+      newAnimeNameInput.value = '';
+      renderAnimeList();
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    loggedInUser = null;
+    usernameInput.value = '';
+    passwordInput.value = '';
+    passwordInput.type = 'password';
+    addAnimeForm.style.display = 'none';
+    mainContainer.style.display = 'none';
+    loginContainer.style.display = 'block';
+    errorMsg.textContent = '';
+    usernameInput.focus();
+  });
+
+  cancelEditBtn.addEventListener('click', () => {
+    closeEditPopup();
+  });
+
+  saveEditBtn.addEventListener('click', () => {
+    const editedName = editAnimeNameInput.value.trim();
+    if(editedName && editingIndex !== -1) {
+      animeList[editingIndex] = editedName;
+      renderAnimeList();
+      closeEditPopup();
+    }
+  });
+
+  // Accessibility: Enter key to save edit
+  editAnimeNameInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') {
+      e.preventDefault();
+      saveEditBtn.click();
+    } else if(e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditBtn.click();
+    }
+  });
+
+  // Set focus on username input on load
+  window.onload = () => {
+    usernameInput.focus();
+  };
+
+</script>
+</body>
+</html>
+
+```
